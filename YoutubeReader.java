@@ -1,4 +1,6 @@
 import com.google.gdata.client.youtube.*;
+import com.google.gdata.data.Link;
+import com.google.gdata.data.TextContent;
 import com.google.gdata.data.geo.impl.*;
 import com.google.gdata.data.media.mediarss.*;
 import com.google.gdata.data.youtube.*;
@@ -160,8 +162,17 @@ public class YoutubeReader {
 			CommentFeed commentsFeed = service.getFeed(new URL(comments
 					.getFeedLink().getHref()), CommentFeed.class);
 			System.out.println("Comments: ");
-			for (CommentEntry commentEntry : commentsFeed.getEntries()) {
-				System.out.println(commentEntry.getPlainTextContent());
+			Link nextLink;
+			while (true) {
+				for (CommentEntry commentEntry : commentsFeed.getEntries()) {
+					System.out.println(commentEntry.getTextContent().getContent().getPlainText());
+				}
+				nextLink = commentsFeed.getLink("next", null);
+				if(nextLink == null){
+					break;
+				}
+				commentsFeed = service.getFeed(new URL(nextLink.getHref()),
+						CommentFeed.class);
 			}
 		} catch (IOException | ServiceException e) {
 			// TODO Auto-generated catch block

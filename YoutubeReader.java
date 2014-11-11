@@ -9,6 +9,9 @@ import com.google.gdata.data.youtube.*;
 import com.google.gdata.data.extensions.*;
 import com.google.gdata.util.*;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
 import java.util.LinkedList;
@@ -27,32 +30,35 @@ public class YoutubeReader {
 	public static final String VIDEOS_API_PREFIX = YOUTUBE_GDATA_SERVER
 			+ "/feeds/api/videos";
 
-	private static final YouTubeService service = new YouTubeService("Augur");
+	public static final String TEXT_DATA = "T";
+
+	public static final String NUMERIC_DATA = "N";
+
+	public static final String LIKES = "L";
+
+	public static final String DISLIKES = "D";
+
+	public static final String VIEWCOUNT = "V";
+
+	public static final String COMMENTS = "C";
+
+	public static final String YOUTUBE = "Y";
+	
+	public static final String FILENAME = "youtubeMovieData.txt";
+
+	private static YouTubeService service = new YouTubeService("Augur");
+	
+	private static S3Utility utility = new S3Utility(); 
 
 	public static void main(String[] args) {
-		// service = new YouTubeService("Saili");
-		/*
-		 * try { YouTubeQuery query = new YouTubeQuery(new URL(
-		 * "http://gdata.youtube.com/feeds/api/videos"));
-		 * query.setOrderBy(YouTubeQuery.OrderBy.RELEVANCE);
-		 * query.setFullTextQuery("gone girl trailer");
-		 * query.setAuthor("foxmovies"); query.setMaxResults(1); VideoFeed
-		 * videoFeed = service.query(query, VideoFeed.class);
-		 * 
-		 * service .getFeed( new URL(
-		 * "http://gdata.youtube.com/feeds/api/standardfeeds/recently_featured"
-		 * ), VideoFeed.class);
-		 * 
-		 * printVideoFeed(videoFeed, true); } catch (IOException |
-		 * ServiceException e) { // TODO Auto-generated catch block
-		 * e.printStackTrace(); }
-		 */
 		getComments("gone girl");
-
+		utility.uploadFile(FILENAME);
 	}
 
-	public static List<String> getComments(String movieName) {
+	public static void getComments(String movieName) {
+		MovieData movie = new MovieData();
 		VideoFeed videoFeed = new VideoFeed();
+		movie.setMovieName(movieName);
 		try {
 			YouTubeQuery query = new YouTubeQuery(new URL(VIDEOS_API_PREFIX));
 			query.setOrderBy(YouTubeQuery.OrderBy.RELEVANCE);
@@ -62,13 +68,57 @@ public class YoutubeReader {
 			videoFeed = service.query(query, VideoFeed.class);
 			printVideoFeed(videoFeed, true);
 		} catch (IOException | ServiceException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return populateCommentsList(videoFeed);
+		populateTrailerStatistics(movie, videoFeed);
+		populateCommentsList(movie, videoFeed);
+		generateInputFile(movie);
+		
 	}
 
-	private static List<String> populateCommentsList(VideoFeed videoFeed) {
+	private static void generateInputFile(MovieData movie) {
+		File inputFile = new File(FILENAME);
+		FileWriter fileWriter;
+		String commentMetadata = movie.getMovieName() + "\t" + TEXT_DATA
+				+ YOUTUBE + COMMENTS + "\t";
+		try {
+
+			inputFile.createNewFile();
+			fileWriter = new FileWriter(inputFile);
+			BufferedWriter bw = new BufferedWriter(fileWriter);
+			for (String comment : movie.getComments()) {
+				String data = commentMetadata + comment;
+				bw.write(data);
+				bw.newLine();
+			}
+			bw.write(movie.getMovieName() + "\t" + NUMERIC_DATA + YOUTUBE
+					+ LIKES + "\t" + movie.getNoOfLikes());
+			bw.newLine();
+			bw.write(movie.getMovieName() + "\t" + NUMERIC_DATA + YOUTUBE
+					+ DISLIKES + "\t" + movie.getNoOfDislikes());
+			bw.newLine();
+			bw.write(movie.getMovieName() + "\t" + NUMERIC_DATA + YOUTUBE
+					+ VIEWCOUNT + "\t" + movie.getViewCount());
+			bw.newLine();
+			bw.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private static void populateTrailerStatistics(MovieData movie,
+			VideoFeed videoFeed) {
+		for (VideoEntry videoEntry : videoFeed.getEntries()) {
+			YtStatistics stats = videoEntry.getStatistics();
+			YtRating rating = videoEntry.getYtRating();
+			movie.setViewCount(stats.getViewCount());
+			movie.setNoOfDislikes(rating.getNumDislikes());
+			movie.setNoOfLikes(rating.getNumLikes());
+		}
+	}
+
+	private static void populateCommentsList(MovieData movie,
+			VideoFeed videoFeed) {
 		List<String> commentsList = new LinkedList<String>();
 		for (VideoEntry videoEntry : videoFeed.getEntries()) {
 			Comments comments = videoEntry.getComments();
@@ -80,8 +130,10 @@ public class YoutubeReader {
 				Link nextLink;
 				while (true) {
 					for (CommentEntry commentEntry : commentsFeed.getEntries()) {
-						commentsList.add(commentEntry.getTextContent()
-								.getContent().getPlainText());
+						String comment = commentEntry.getTextContent()
+								.getContent().getPlainText();
+						comment = comment.replace("\n","");
+						commentsList.add(comment);
 						System.out.println(commentEntry.getTextContent()
 								.getContent().getPlainText());
 					}
@@ -93,19 +145,18 @@ public class YoutubeReader {
 							CommentFeed.class);
 				}
 			} catch (IOException | ServiceException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 
 		}
-		return commentsList;
+		movie.setComments(commentsList);
 	}
 
 	public static void printVideoFeed(VideoFeed videoFeed, boolean detailed) {
 		for (VideoEntry videoEntry : videoFeed.getEntries()) {
 			printVideoEntry(videoEntry, detailed);
-			//printCommentsFeed(videoEntry);
-			//printResponseFeed(videoEntry);
+			// printCommentsFeed(videoEntry);
+			// printResponseFeed(videoEntry);
 		}
 	}
 
@@ -235,15 +286,4 @@ public class YoutubeReader {
 		}
 
 	}
-
-	/*
-	 * private static void printResponseFeed(VideoEntry videoEntry) { Link
-	 * videoResponseLink = videoEntry.getVideoResponsesLink(); try { Feed
-	 * responseFeed = service.getFeed(new URL(videoResponseLink.getHref()),
-	 * Feed.class); System.out.println("Responses: "); for (Entry responseEntry
-	 * : responseFeed.getEntries()) {
-	 * System.out.println(responseEntry.getTextContent()
-	 * .getContent().getPlainText()); } } catch (IOException | ServiceException
-	 * e) { // TODO Auto-generated catch block e.printStackTrace(); } }
-	 */
 }

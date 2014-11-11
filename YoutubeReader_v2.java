@@ -14,7 +14,7 @@ import java.net.URL;
 import java.util.LinkedList;
 import java.util.List;
 
-public class YoutubeReader {
+public class YoutubeReader_v2 {
 
 	/**
 	 * The name of the server hosting the YouTube GDATA feeds

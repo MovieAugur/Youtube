@@ -10,7 +10,7 @@ import com.google.gdata.util.*;
 import java.io.IOException;
 import java.net.URL;
 
-public class YoutubeReader {
+public class YoutubeReader_v1 {
 
 	/**
 	 * The name of the server hosting the YouTube GDATA feeds

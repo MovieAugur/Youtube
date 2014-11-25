@@ -12,7 +12,15 @@ public class S3Utility {
 
 	private AWSCredentials credentials = null;
 	
-	private static final String bucketName = "uflsaili"; 
+	private String bucketName;
+	
+	private String path;
+
+	public S3Utility(String bucketName, String path) {
+		super();
+		this.bucketName = bucketName;
+		this.path = path;
+	}
 
 	public void uploadFile(String uploadFileName) {
 
@@ -30,7 +38,7 @@ public class S3Utility {
 		try {
 			System.out.println("Uploading a new object to S3 from a file\n");
 			File file = new File(uploadFileName);
-			s3.putObject(new PutObjectRequest(bucketName, "test", file));
+			s3.putObject(new PutObjectRequest(this.bucketName,this.path + "/youtube/" + uploadFileName, file));
 
 		} catch (AmazonServiceException ase) {
 			System.out.println("Caught an AmazonServiceException, which "

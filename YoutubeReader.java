@@ -14,6 +14,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -43,19 +44,27 @@ public class YoutubeReader {
 	public static final String COMMENTS = "C";
 
 	public static final String YOUTUBE = "Y";
-	
-	public static final String FILENAME = "youtubeMovieData.txt";
+
+	public static final String FILE_SUFFIX = "yt_";
 
 	private static YouTubeService service = new YouTubeService("Augur");
-	
-	private static S3Utility utility = new S3Utility(); 
+
+	private static S3Utility utility;
+
+	private static List<MovieData> movieList = new ArrayList<MovieData>();
 
 	public static void main(String[] args) {
-		getComments("gone girl");
-		utility.uploadFile(FILENAME);
+		// List<String> movieList = new ArrayList<String>();
+		String bucketName = args[0];
+		String path = args[1];
+		utility = new S3Utility(bucketName, path);
+		for (int i = 2; i < args.length; i++) {
+			String movie = args[i].replace("_", " ");
+			utility.uploadFile(fetchDataAndGenerateInput(movie));
+		}
 	}
 
-	public static void getComments(String movieName) {
+	public static String fetchDataAndGenerateInput(String movieName) {
 		MovieData movie = new MovieData();
 		VideoFeed videoFeed = new VideoFeed();
 		movie.setMovieName(movieName);
@@ -63,7 +72,7 @@ public class YoutubeReader {
 			YouTubeQuery query = new YouTubeQuery(new URL(VIDEOS_API_PREFIX));
 			query.setOrderBy(YouTubeQuery.OrderBy.RELEVANCE);
 			query.setFullTextQuery(movieName + "  trailer");
-			query.setAuthor("foxmovies");
+			query.setAuthor("movieclipsTRAILERS");
 			query.setMaxResults(1);
 			videoFeed = service.query(query, VideoFeed.class);
 			printVideoFeed(videoFeed, true);
@@ -72,22 +81,23 @@ public class YoutubeReader {
 		}
 		populateTrailerStatistics(movie, videoFeed);
 		populateCommentsList(movie, videoFeed);
-		generateInputFile(movie);
-		
+		movieList.add(movie);
+		return generateInputFile(movie);
 	}
 
-	private static void generateInputFile(MovieData movie) {
-		File inputFile = new File(FILENAME);
+	private static String generateInputFile(MovieData movie) {
+		String fileName = FILE_SUFFIX + movie.getMovieName() + ".txt";
+		File inputFile = new File(fileName);
 		FileWriter fileWriter;
 		String commentMetadata = movie.getMovieName() + "\t" + TEXT_DATA
-				+ YOUTUBE + COMMENTS + "\t";
+				+ YOUTUBE + COMMENTS;
 		try {
 
 			inputFile.createNewFile();
 			fileWriter = new FileWriter(inputFile);
 			BufferedWriter bw = new BufferedWriter(fileWriter);
 			for (String comment : movie.getComments()) {
-				String data = commentMetadata + comment;
+				String data = commentMetadata + "\t" + comment;
 				bw.write(data);
 				bw.newLine();
 			}
@@ -104,6 +114,7 @@ public class YoutubeReader {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		return fileName;
 	}
 
 	private static void populateTrailerStatistics(MovieData movie,
@@ -132,7 +143,7 @@ public class YoutubeReader {
 					for (CommentEntry commentEntry : commentsFeed.getEntries()) {
 						String comment = commentEntry.getTextContent()
 								.getContent().getPlainText();
-						comment = comment.replace("\n","");
+						comment = comment.replace("\n", "");
 						commentsList.add(comment);
 						System.out.println(commentEntry.getTextContent()
 								.getContent().getPlainText());
@@ -155,8 +166,7 @@ public class YoutubeReader {
 	public static void printVideoFeed(VideoFeed videoFeed, boolean detailed) {
 		for (VideoEntry videoEntry : videoFeed.getEntries()) {
 			printVideoEntry(videoEntry, detailed);
-			// printCommentsFeed(videoEntry);
-			// printResponseFeed(videoEntry);
+			printCommentsFeed(videoEntry);
 		}
 	}
 

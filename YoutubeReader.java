@@ -70,9 +70,9 @@ public class YoutubeReader {
 		movie.setMovieName(movieName);
 		try {
 			YouTubeQuery query = new YouTubeQuery(new URL(VIDEOS_API_PREFIX));
-			query.setOrderBy(YouTubeQuery.OrderBy.RELEVANCE);
+			query.setOrderBy(YouTubeQuery.OrderBy.VIEW_COUNT);
 			query.setFullTextQuery(movieName + "  trailer");
-			query.setAuthor("movieclipsTRAILERS");
+			//query.setAuthor("movieclipsTRAILERS");
 			query.setMaxResults(1);
 			videoFeed = service.query(query, VideoFeed.class);
 			printVideoFeed(videoFeed, true);
@@ -114,6 +114,7 @@ public class YoutubeReader {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		System.out.println("Created file..." + fileName);
 		return fileName;
 	}
 
@@ -145,12 +146,20 @@ public class YoutubeReader {
 								.getContent().getPlainText();
 						comment = comment.replace("\n", "");
 						commentsList.add(comment);
-						System.out.println(commentEntry.getTextContent()
-								.getContent().getPlainText());
+						/*System.out.println(commentEntry.getTextContent()
+								.getContent().getPlainText());*/
 					}
 					nextLink = commentsFeed.getLink("next", null);
 					if (nextLink == null) {
 						break;
+					}
+					try {
+						//System.out.println("Done 1.");
+						Thread.sleep(3000);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+						return;
 					}
 					commentsFeed = service.getFeed(new URL(nextLink.getHref()),
 							CommentFeed.class);
@@ -166,7 +175,7 @@ public class YoutubeReader {
 	public static void printVideoFeed(VideoFeed videoFeed, boolean detailed) {
 		for (VideoEntry videoEntry : videoFeed.getEntries()) {
 			printVideoEntry(videoEntry, detailed);
-			printCommentsFeed(videoEntry);
+			//printCommentsFeed(videoEntry);
 		}
 	}
 
@@ -242,7 +251,7 @@ public class YoutubeReader {
 			}
 			System.out.println();
 
-			System.out.println("\tThumbnails:");
+			/*System.out.println("\tThumbnails:");
 			for (MediaThumbnail mediaThumbnail : mediaGroup.getThumbnails()) {
 				System.out.println("\t\tThumbnail URL: "
 						+ mediaThumbnail.getUrl());
@@ -260,7 +269,7 @@ public class YoutubeReader {
 				System.out.println("\t\tDuration: "
 						+ mediaContent.getDuration());
 				System.out.println();
-			}
+			}*/
 
 			for (YouTubeMediaRating mediaRating : mediaGroup
 					.getYouTubeRatings()) {

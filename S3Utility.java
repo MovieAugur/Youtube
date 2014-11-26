@@ -38,7 +38,7 @@ public class S3Utility {
 		try {
 			System.out.println("Uploading a new object to S3 from a file\n");
 			File file = new File(uploadFileName);
-			s3.putObject(new PutObjectRequest(this.bucketName,this.path + "/youtube/" + uploadFileName, file));
+			s3.putObject(new PutObjectRequest(this.bucketName,this.path + "/" + uploadFileName, file));
 
 		} catch (AmazonServiceException ase) {
 			System.out.println("Caught an AmazonServiceException, which "

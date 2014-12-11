@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path=""/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="con" path="com.amazonaws.eclipse.sdk.AWS_JAVA_SDK"/>
+	<classpathentry kind="lib" path="/Users/shastri/Documents/workspace/Youtube/activation.jar"/>
+	<classpathentry kind="lib" path="/Users/shastri/Documents/workspace/Youtube/gdata-calendar-2.0.jar"/>
+	<classpathentry kind="lib" path="/Users/shastri/Documents/workspace/Youtube/gdata-calendar-meta-2.0.jar"/>
+	<classpathentry kind="lib" path="/Users/shastri/Documents/workspace/Youtube/gdata-client-1.0_2.jar"/>
+	<classpathentry kind="lib" path="/Users/shastri/Documents/workspace/Youtube/gdata-client-1.0.jar"/>
+	<classpathentry kind="lib" path="/Users/shastri/Documents/workspace/Youtube/gdata-client-meta-1.0_2.jar"/>
+	<classpathentry kind="lib" path="/Users/shastri/Documents/workspace/Youtube/gdata-client-meta-1.0.jar"/>
+	<classpathentry kind="lib" path="/Users/shastri/Documents/workspace/Youtube/gdata-core-1.0_2.jar"/>
+	<classpathentry kind="lib" path="/Users/shastri/Documents/workspace/Youtube/gdata-core-1.0.jar"/>
+	<classpathentry kind="lib" path="/Users/shastri/Documents/workspace/Youtube/gdata-docs-3.0.jar"/>
+	<classpathentry kind="lib" path="/Users/shastri/Documents/workspace/Youtube/gdata-docs-meta-3.0.jar"/>
+	<classpathentry kind="lib" path="/Users/shastri/Documents/workspace/Youtube/gdata-maps-meta-2.0.jar"/>
+	<classpathentry kind="lib" path="/Users/shastri/Documents/workspace/Youtube/gdata-media-1.0_2.jar"/>
+	<classpathentry kind="lib" path="/Users/shastri/Documents/workspace/Youtube/gdata-media-1.0.jar"/>
+	<classpathentry kind="lib" path="/Users/shastri/Documents/workspace/Youtube/gdata-spreadsheet-3.0.jar"/>
+	<classpathentry kind="lib" path="/Users/shastri/Documents/workspace/Youtube/gdata-spreadsheet-meta-3.0.jar"/>
+	<classpathentry kind="lib" path="/Users/shastri/Documents/workspace/Youtube/gdata-youtube-2.0.jar"/>
+	<classpathentry kind="lib" path="/Users/shastri/Documents/workspace/Youtube/gdata-youtube-meta-2.0.jar"/>
+	<classpathentry kind="lib" path="/Users/shastri/Documents/workspace/Youtube/guava-18.0.jar"/>
+	<classpathentry kind="lib" path="/Users/shastri/Documents/workspace/Youtube/mail.jar"/>
+	<classpathentry kind="lib" path="/Users/shastri/Documents/workspace/Youtube/maps.jar"/>
+	<classpathentry kind="lib" path="/Users/shastri/Documents/workspace/Youtube/sample-util.jar"/>
+	<classpathentry kind="lib" path="/Users/shastri/Documents/workspace/Youtube/servlet-api.jar"/>
+	<classpathentry kind="output" path=""/>
+</classpath>

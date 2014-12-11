@@ -1,8 +1,5 @@
 import com.google.gdata.client.youtube.*;
-import com.google.gdata.data.Entry;
-import com.google.gdata.data.Feed;
 import com.google.gdata.data.Link;
-import com.google.gdata.data.TextContent;
 import com.google.gdata.data.geo.impl.*;
 import com.google.gdata.data.media.mediarss.*;
 import com.google.gdata.data.youtube.*;
@@ -58,10 +55,30 @@ public class YoutubeReader {
 		String bucketName = args[0];
 		String path = args[1];
 		utility = new S3Utility(bucketName, path);
+		/*File inputFile = new File("movies2013.txt");
+		try {
+			BufferedReader br = new BufferedReader(new FileReader(inputFile));
+			String line;
+			while ((line = br.readLine()) != null) {
+				StringTokenizer tokenizer = new StringTokenizer(line, "\t");
+				String movie = tokenizer.nextToken();
+				System.out.println(movie);
+				utility.uploadFile(fetchDataAndGenerateInput(movie));
+			}
+			br.close();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}*/
+		System.out.println("Starting youtube job...");
 		for (int i = 2; i < args.length; i++) {
 			String movie = args[i].replace("_", " ");
 			utility.uploadFile(fetchDataAndGenerateInput(movie));
 		}
+		 
 	}
 
 	public static String fetchDataAndGenerateInput(String movieName) {
@@ -70,9 +87,9 @@ public class YoutubeReader {
 		movie.setMovieName(movieName);
 		try {
 			YouTubeQuery query = new YouTubeQuery(new URL(VIDEOS_API_PREFIX));
-			query.setOrderBy(YouTubeQuery.OrderBy.VIEW_COUNT);
-			query.setFullTextQuery(movieName + "  trailer");
-			//query.setAuthor("movieclipsTRAILERS");
+			query.setOrderBy(YouTubeQuery.OrderBy.RELEVANCE);
+			query.setFullTextQuery(movieName + " trailer");
+			// query.setAuthor("movieclipsTRAILERS");
 			query.setMaxResults(1);
 			videoFeed = service.query(query, VideoFeed.class);
 			printVideoFeed(videoFeed, true);
@@ -86,7 +103,7 @@ public class YoutubeReader {
 	}
 
 	private static String generateInputFile(MovieData movie) {
-		String fileName = FILE_SUFFIX + movie.getMovieName() + ".txt";
+		String fileName = FILE_SUFFIX + movie.getMovieName().replace(":","") + ".txt";
 		File inputFile = new File(fileName);
 		FileWriter fileWriter;
 		String commentMetadata = movie.getMovieName() + "\t" + TEXT_DATA
@@ -124,8 +141,10 @@ public class YoutubeReader {
 			YtStatistics stats = videoEntry.getStatistics();
 			YtRating rating = videoEntry.getYtRating();
 			movie.setViewCount(stats.getViewCount());
-			movie.setNoOfDislikes(rating.getNumDislikes());
-			movie.setNoOfLikes(rating.getNumLikes());
+			if (rating != null) {
+				movie.setNoOfDislikes(rating.getNumDislikes());
+				movie.setNoOfLikes(rating.getNumLikes());
+			}
 		}
 	}
 
@@ -135,39 +154,48 @@ public class YoutubeReader {
 		for (VideoEntry videoEntry : videoFeed.getEntries()) {
 			Comments comments = videoEntry.getComments();
 			CommentFeed commentsFeed = new CommentFeed();
-			try {
-				commentsFeed = service.getFeed(new URL(comments.getFeedLink()
-						.getHref()), CommentFeed.class);
-				System.out.println("Comments: ");
-				Link nextLink;
-				while (true) {
-					for (CommentEntry commentEntry : commentsFeed.getEntries()) {
-						String comment = commentEntry.getTextContent()
-								.getContent().getPlainText();
-						comment = comment.replace("\n", "");
-						commentsList.add(comment);
-						/*System.out.println(commentEntry.getTextContent()
-								.getContent().getPlainText());*/
-					}
-					nextLink = commentsFeed.getLink("next", null);
-					if (nextLink == null) {
-						break;
-					}
-					try {
-						//System.out.println("Done 1.");
-						Thread.sleep(3000);
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-						return;
-					}
-					commentsFeed = service.getFeed(new URL(nextLink.getHref()),
+			if (comments != null) {
+				try {
+					String initialLink = comments.getFeedLink().getHref();
+					initialLink = initialLink
+							+ "&orderby=published&max-results=50";
+					commentsFeed = service.getFeed(new URL(initialLink),
 							CommentFeed.class);
+					System.out.println(initialLink);
+					Link nextLink;
+					while (true) {
+						for (CommentEntry commentEntry : commentsFeed
+								.getEntries()) {
+							String comment = commentEntry.getTextContent()
+									.getContent().getPlainText();
+							comment = comment.replace("\n", "");
+							commentsList.add(comment);
+							/*
+							 * System.out.println(commentEntry.getTextContent()
+							 * .getContent().getPlainText());
+							 */
+						}
+						nextLink = commentsFeed.getLink("next", null);
+						// System.out.println(nextLink.getHref());
+						if (nextLink == null) {
+							System.out.println("breaking out");
+							break;
+						}
+						try {
+							Thread.sleep(3000);
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+							return;
+						}
+						commentsFeed = service.getFeed(
+								new URL(nextLink.getHref()), CommentFeed.class);
+					}
+				} catch (IOException | ServiceException e) {
+					System.out.println("Error in fetching comments: ");
+					e.printStackTrace();
 				}
-			} catch (IOException | ServiceException e) {
-				e.printStackTrace();
 			}
-
 		}
 		movie.setComments(commentsList);
 	}
@@ -175,7 +203,7 @@ public class YoutubeReader {
 	public static void printVideoFeed(VideoFeed videoFeed, boolean detailed) {
 		for (VideoEntry videoEntry : videoFeed.getEntries()) {
 			printVideoEntry(videoEntry, detailed);
-			//printCommentsFeed(videoEntry);
+			// printCommentsFeed(videoEntry);
 		}
 	}
 
@@ -251,25 +279,21 @@ public class YoutubeReader {
 			}
 			System.out.println();
 
-			/*System.out.println("\tThumbnails:");
-			for (MediaThumbnail mediaThumbnail : mediaGroup.getThumbnails()) {
-				System.out.println("\t\tThumbnail URL: "
-						+ mediaThumbnail.getUrl());
-				System.out.println("\t\tThumbnail Time Index: "
-						+ mediaThumbnail.getTime());
-				System.out.println();
-			}
-
-			System.out.println("\tMedia:");
-			for (YouTubeMediaContent mediaContent : mediaGroup
-					.getYouTubeContents()) {
-				System.out.println("\t\tMedia Location: "
-						+ mediaContent.getUrl());
-				System.out.println("\t\tMedia Type: " + mediaContent.getType());
-				System.out.println("\t\tDuration: "
-						+ mediaContent.getDuration());
-				System.out.println();
-			}*/
+			/*
+			 * System.out.println("\tThumbnails:"); for (MediaThumbnail
+			 * mediaThumbnail : mediaGroup.getThumbnails()) {
+			 * System.out.println("\t\tThumbnail URL: " +
+			 * mediaThumbnail.getUrl());
+			 * System.out.println("\t\tThumbnail Time Index: " +
+			 * mediaThumbnail.getTime()); System.out.println(); }
+			 * 
+			 * System.out.println("\tMedia:"); for (YouTubeMediaContent
+			 * mediaContent : mediaGroup .getYouTubeContents()) {
+			 * System.out.println("\t\tMedia Location: " +
+			 * mediaContent.getUrl()); System.out.println("\t\tMedia Type: " +
+			 * mediaContent.getType()); System.out.println("\t\tDuration: " +
+			 * mediaContent.getDuration()); System.out.println(); }
+			 */
 
 			for (YouTubeMediaRating mediaRating : mediaGroup
 					.getYouTubeRatings()) {
@@ -280,6 +304,7 @@ public class YoutubeReader {
 		}
 	}
 
+	@SuppressWarnings("unused")
 	private static void printCommentsFeed(VideoEntry videoEntry) {
 		Comments comments = videoEntry.getComments();
 		try {
